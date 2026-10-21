@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#ffffff">
+<title>使用说明 · 晚自习考勤表</title>
+<style>
+:root{--blue:#2f5597;--ink:#101828;--sub:#667085;--line:#e4e7ec;--bg:#f4f5f7}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.9 system-ui,-apple-system,"Segoe UI","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+}
+.bar{
+  position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);
+  padding:10px 16px;display:flex;justify-content:space-between;align-items:center;
+  font-size:14px;
+}
+.bar a{color:var(--blue);text-decoration:none;font-weight:600}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+.card{background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 1px 3px rgba(16,24,40,.06)}
+h1{font-size:20px;margin:0 0 4px}
+.url{font-size:13px;color:var(--sub);word-break:break-all;margin-bottom:18px}
+h2{
+  font-size:16px;margin:26px 0 8px;padding-left:9px;border-left:3px solid var(--blue);
+  line-height:1.3;
+}
+h2:first-of-type{margin-top:8px}
+p,li{font-size:15px;margin:6px 0}
+ol,ul{margin:6px 0;padding-left:22px}
+li{margin:4px 0}
+.note{background:#f7f9fc;border:1px solid #e6ecf5;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
+.note b{color:var(--blue)}
+.q{margin:14px 0 0;font-weight:600}
+.a{margin:2px 0 0;color:#344054}
+hr{border:none;border-top:1px solid var(--line);margin:28px 0}
+.foot{text-align:center;color:#98a2b3;font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span>晚自习考勤表 · 使用说明</span>
+  <a href="./">← 返回考勤表</a>
+</div>
+
+<div class="wrap">
+<div class="card">
+
+<h1>晚自习考勤表　使用说明与注意事项</h1>
+<div class="url">https://heibai-king.github.io/checkin/</div>
+
+<h2>一、用途</h2>
+<p>用于记录每次晚自习、早操等活动的出勤情况：标记请假人员、记录请假事由、标记未到人员，并自动统计应到与实到人数。每次记录可单独保存，形成历史台账。</p>
+
+<h2>二、打开方式</h2>
+<ol>
+  <li>电脑：使用浏览器打开上述网址即可。</li>
+  <li>手机：首次打开后建议添加到主屏幕，之后从桌面图标进入。
+    <ul>
+      <li>iPhone：需在 Safari 中打开，点「分享」→「添加到主屏幕」。</li>
+      <li>安卓 / 鸿蒙：在浏览器菜单中选择「添加到主屏幕」或「添加到桌面」。</li>
+    </ul>
+  </li>
+  <li>微信内置浏览器与系统浏览器为两套独立存储，同一网址从不同入口打开，数据互不相通。请固定使用同一种方式，建议统一使用桌面图标。</li>
+</ol>
+
+<h2>三、使用方法</h2>
+<ol>
+  <li>选择日期，填写活动名称（如：晚自习、早操）。</li>
+  <li>请假人员：点击其右侧「请假 否」，变为「请假 是」，下方自动展开「事由」栏，填写请假原因；不填默认为「无」。</li>
+  <li>未到人员：点击「出勤 已到」，变为「未到」。</li>
+  <li>页面底部实时统计：总人数、请假、应到、实到、未到。</li>
+  <li>填写完成后点击「保存本次」，本条记录存入历史记录。</li>
+</ol>
+
+<div class="note">
+  <b>统计口径</b><br>
+  应到人数 = 总人数 − 请假人数<br>
+  实到人数 = 应到人员中实际到达的人数<br>
+  未到人数 = 应到人数 − 实到人数<br>
+  请假人员不计入应到，因此不计入未到。
+</div>
+
+<h2>四、数据保存</h2>
+<ol>
+  <li>所有数据仅保存在使用者本人设备的浏览器中，不上传、不联网同步，其他人无法查看。</li>
+  <li>更换设备、更换浏览器、清除浏览器缓存、使用无痕模式，均会导致数据丢失且无法恢复。</li>
+  <li>微信内置浏览器与系统浏览器数据独立；同一网址在不同入口打开，数据不互通。</li>
+  <li>iOS 设备的 Safari 若长期（约七日以上）未访问该页面，本地数据可能被系统自动清除。</li>
+</ol>
+
+<h2>五、备份与导出</h2>
+<ol>
+  <li>建议每次记录完成后，点击「备份」→「导出备份文件（.json）」，保存至微信收藏或手机文件中。</li>
+  <li>更换设备时，在新设备打开同一网址，点击「备份」→「导入备份」，选择此前导出的文件即可恢复。</li>
+  <li>需要提交或留档时，点击「导出」，生成 CSV 文件，可使用 Excel、WPS 直接打开。</li>
+  <li>备份文件仅对应导出它的设备，请勿相互转发，以免覆盖各自数据。</li>
+</ol>
+
+<h2>六、名单管理</h2>
+<ol>
+  <li>默认名单为 50 人，另预留 5 个空位，可直接补填。</li>
+  <li>点击「名单」可修改姓名、增加或删除人员；姓名留空的行不会显示在点名表中。</li>
+  <li>「恢复默认名单」将名单恢复为初始 50 人，历史记录不受影响，自行添加的姓名会被清除。</li>
+  <li>名单修改仅在本设备生效，不会同步至其他使用者。</li>
+</ol>
+
+<h2>七、隐私说明</h2>
+<ol>
+  <li>页面存放于公开的静态托管空间，任何获得链接的人均可查看页面内容（仅含姓名，不含学号）。</li>
+  <li>页面已设置禁止搜索引擎收录，但链接本身不具备访问权限控制。</li>
+  <li>请勿将链接发布至班级以外的公开渠道。</li>
+  <li>如不再使用，由仓库所有者删除该页面后，链接随即失效。</li>
+</ol>
+
+<h2>八、网络访问</h2>
+<ol>
+  <li>页面托管于 GitHub Pages，国内部分网络环境（个别运营商、校园网）可能出现访问缓慢或无法打开的情况。</li>
+  <li>建议先由一至两人在手机流量下测试，确认可正常访问后再统一发送。</li>
+  <li>如加载缓慢，可尝试刷新页面；如持续无法打开，请联系维护人获取离线文件版本。</li>
+</ol>
+
+<h2>九、常见问题</h2>
+<p class="q">打开后空白或一直加载？</p>
+<p class="a">先刷新或更换网络重试；仍无法打开，多为当前网络无法访问托管服务器。</p>
+<p class="q">更换手机后记录不见了？</p>
+<p class="a">数据仅存于原设备浏览器。需在原设备导出备份，再于新设备导入。</p>
+<p class="q">同一天保存了两次怎么办？</p>
+<p class="a">同一日期与同一活动仅保留一条记录，第二次保存时会提示是否覆盖。</p>
+<p class="q">请假的人为什么没有计入「未到」？</p>
+<p class="a">请假人员不计入应到人数，因此不参与实到与未到的统计。</p>
+<p class="q">能否多人共同编辑同一份表？</p>
+<p class="a">当前版本为单机版，各使用者数据独立，互不可见。</p>
+
+<h2>十、版本与更新</h2>
+<ol>
+  <li>页面由维护人统一更新，网址保持不变。</li>
+  <li>版本更新不影响已保存的记录。</li>
+  <li>若发现界面与本说明不一致，请刷新页面（必要时清除缓存）后重试。</li>
+  <li>使用中如遇问题，请联系本班负责维护的同学。</li>
+</ol>
+
+<hr>
+
+<h2>附：发群通知（可直接复制）</h2>
+<p>晚自习考勤表已启用：https://heibai-king.github.io/checkin/</p>
+<p>打开后先选择日期、填写活动（如晚自习）；请假的人点「请假 否」改为「是」并填写事由，未到的人点「出勤 已到」改为「未到」；底部自动统计应到、实到人数；完成后点「保存本次」。</p>
+<p>建议添加到手机桌面，并固定使用同一种方式打开。数据保存在各自设备中，请定期使用「备份」导出，以防丢失。</p>
+
+<div class="foot">本页可随时通过 https://heibai-king.github.io/checkin/help.html 访问</div>
+
+</div>
+</div>
+</body>
+</html>
