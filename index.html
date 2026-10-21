@@ -231,6 +231,7 @@ footer{
 <div class="mask" id="mBackup"><div class="sheet">
   <h3>备份与恢复<button class="x" data-close>×</button></h3>
   <div class="body">
+    <p id="wxTip" style="display:none;font-size:13px;color:#b26a00;background:#fdf3e3;border:1px solid #efd3a8;border-radius:8px;padding:8px 10px;margin:0 0 12px;line-height:1.65">微信里不能下载文件。请点右上角 <b>…</b> → <b>在浏览器打开</b>，再做备份。</p>
     <p style="font-size:13px;color:#667085;margin:2px 0 14px">
       数据只存在这台设备的浏览器里。换手机、清缓存前，先「导出备份」存一个文件；到新设备用「导入备份」恢复。
     </p>
@@ -242,6 +243,19 @@ footer{
 </div></div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 文本导出（微信里不能下载文件时用） -->
+<div class="mask" id="mText"><div class="sheet">
+  <h3><span id="textTitle">导出</span><button class="x" data-close>×</button></h3>
+  <div class="body">
+    <p id="textHint" style="font-size:13px;color:#667085;margin:2px 0 12px;line-height:1.7"></p>
+    <textarea id="textArea" readonly style="display:none;width:100%;height:230px;font:12px/1.6 ui-monospace,Consolas,monospace;border:1px solid #e4e7ec;border-radius:10px;padding:10px;resize:vertical;background:#fbfcfd;color:#344054"></textarea>
+  </div>
+  <div class="foot" style="display:flex;gap:8px">
+    <button class="btn primary" id="btnCopyText" style="display:none">复制内容</button>
+    <button class="btn ghost" data-close>关闭</button>
+  </div>
+</div></div>
 
 <!-- 说明 -->
 <div class="mask" id="mHelp"><div class="sheet">
@@ -262,6 +276,7 @@ footer{
 "use strict";
 
 var KEY = "kq_v1";
+var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
 var DEFAULT_NAMES = [
 "武钰馨","黄宇童","李佳静","谢圣轩","李博","郑翔铭","张晗羽","高斯蕊","王雨薇","宋鑫雨",
@@ -514,14 +529,57 @@ function showDetail(r){
 /* ---------------- 导出 ---------------- */
 function csvCell(v){ v = (v===null||v===undefined) ? "" : String(v); return '"' + v.replace(/"/g,'""') + '"'; }
 
-function download(filename, text, mime){
-  var blob = new Blob([text], {type: mime || "text/plain;charset=utf-8"});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1200);
+function download(filename, text, mime, copyable){
+  // 微信内置浏览器不允许下载文件，改为弹出可复制的内容
+  if(isWeChat){ showTextExport(filename, text, copyable); return false; }
+  try{
+    var blob = new Blob([text], {type: mime || "text/plain;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1200);
+    return true;
+  }catch(e){
+    showTextExport(filename, text, copyable);
+    return false;
+  }
 }
+
+function showTextExport(filename, text, copyable){
+  document.getElementById("textTitle").textContent = filename;
+  var ta = document.getElementById("textArea");
+  var copyBtn = document.getElementById("btnCopyText");
+  var hint = document.getElementById("textHint");
+  if(copyable){
+    ta.style.display = "block";
+    ta.value = String(text).replace(/^\uFEFF/, "");
+    copyBtn.style.display = "flex";
+    hint.innerHTML = (isWeChat
+      ? "微信里不能直接下载文件，所以这里把内容显示出来。<br>点「复制内容」粘贴到微信文件传输助手，再存成表格；"
+      : "内容已生成，可复制后另存为文件；")
+      + "<br>想直接下载文件：点右上角 <b>…</b> → <b>在浏览器打开</b>，再点导出。";
+  }else{
+    ta.style.display = "none";
+    copyBtn.style.display = "none";
+    hint.innerHTML = "微信里不能下载文件，这个备份没法在微信里完成。<br>请点右上角 <b>…</b> → <b>在浏览器打开</b>，再点「备份」→「导出备份文件」。";
+  }
+  openMask("mText");
+}
+
+document.getElementById("btnCopyText").addEventListener("click", function(){
+  var ta = document.getElementById("textArea");
+  ta.focus(); ta.select();
+  if(ta.setSelectionRange) ta.setSelectionRange(0, ta.value.length);
+  var ok = false;
+  try{ ok = document.execCommand("copy"); }catch(e){}
+  if(ok){ toast("已复制"); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(function(){ toast("已复制"); }, function(){ toast("复制失败，请长按选择"); });
+  }else{
+    toast("复制失败，请长按选择");
+  }
+});
 
 function recordToRows(r){
   var rows = [];
@@ -552,14 +610,16 @@ document.getElementById("btnExport").addEventListener("click", function(){
     date: d || "未填日期", activity: a || "未填活动",
     people: state.people.map(function(p){ return {name:p.name, leave:p.leave, reason:p.reason, absent:p.absent}; })
   };
-  download("考勤-" + (d||"未填") + "-" + (a||"未填") + ".csv", buildCsv([rec]), "text/csv;charset=utf-8");
-  toast("已导出 CSV，可用 Excel / WPS 打开");
+  if(download("考勤-" + (d||"未填") + "-" + (a||"未填") + ".csv", buildCsv([rec]), "text/csv;charset=utf-8", true)){
+    toast("已导出 CSV，可用 Excel / WPS 打开");
+  }
 });
 
 document.getElementById("btnExportAll").addEventListener("click", function(){
   if(!state.records.length){ toast("还没有记录"); return; }
-  download("考勤记录-全部.csv", buildCsv(state.records.slice().sort(function(a,b){ return a.date.localeCompare(b.date); })), "text/csv;charset=utf-8");
-  toast("已导出 " + state.records.length + " 条记录");
+  if(download("考勤记录-全部.csv", buildCsv(state.records.slice().sort(function(a,b){ return a.date.localeCompare(b.date); })), "text/csv;charset=utf-8", true)){
+    toast("已导出 " + state.records.length + " 条记录");
+  }
 });
 
 /* ---------------- 名单 ---------------- */
@@ -612,13 +672,17 @@ document.getElementById("btnDefaultRoster").addEventListener("click", function()
 });
 
 /* ---------------- 备份 ---------------- */
-document.getElementById("btnBackup").addEventListener("click", function(){ openMask("mBackup"); });
+document.getElementById("btnBackup").addEventListener("click", function(){
+  document.getElementById("wxTip").style.display = isWeChat ? "block" : "none";
+  openMask("mBackup");
+});
 document.getElementById("btnHelp").addEventListener("click", function(){ openMask("mHelp"); });
 
 document.getElementById("btnExportBackup").addEventListener("click", function(){
-  download("考勤备份-" + new Date().toISOString().slice(0,10) + ".json",
-    JSON.stringify(state, null, 2), "application/json");
-  toast("已导出备份");
+  if(download("考勤备份-" + new Date().toISOString().slice(0,10) + ".json",
+    JSON.stringify(state, null, 2), "application/json", false)){
+    toast("已导出备份");
+  }
 });
 
 document.getElementById("fileImport").addEventListener("change", function(e){
