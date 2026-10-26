@@ -53,7 +53,9 @@ header{
 }
 .row.off{background:#fcfcfd}
 .idx{color:#98a2b3;font-size:13px;text-align:center}
-.name{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.name{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.name .al{font-size:12px;font-weight:500;color:var(--blue)}
+.name:active{opacity:.55}
 .pills{display:flex;gap:6px}
 .pill{
   border:1px solid var(--line);background:#fff;border-radius:999px;
@@ -139,6 +141,8 @@ footer{
   flex:1 1 auto;min-width:0;height:38px;border:1px solid var(--line);border-radius:9px;
   padding:0 10px;font-size:16px;
 }
+.rrow input.nm{flex:1.15}
+.rrow input.al{flex:1;font-size:14px;color:#2f5597}
 .rrow .rm{flex:0 0 auto;color:#c0c5cf;font-size:18px;padding:0 4px}
 
 .detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f2f3f6;font-size:14px}
@@ -156,7 +160,7 @@ footer{
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media(min-width:760px){
-  .row{grid-template-columns:40px 130px auto minmax(160px,1fr);gap:6px 12px}
+  .row{grid-template-columns:40px 190px auto minmax(160px,1fr);gap:6px 12px}
   .pills{justify-self:start}
   .reason{grid-column:auto;margin:0}
   .reason .lb{display:none}
@@ -257,6 +261,20 @@ footer{
   </div>
 </div></div>
 
+<!-- 备注 -->
+<div class="mask" id="mAlias"><div class="sheet">
+  <h3><span id="aliasTitle">备注</span><button class="x" data-close>×</button></h3>
+  <div class="body">
+    <p style="font-size:13px;color:#667085;margin:0 0 10px;line-height:1.7">会显示在名字后面，比如「周一晚课」。留空就不显示。</p>
+    <input id="aliasInput" type="text" maxlength="24" placeholder="例：周一晚课" autocomplete="off"
+      style="width:100%;height:44px;border:1px solid #e4e7ec;border-radius:10px;padding:0 12px;font-size:16px">
+  </div>
+  <div class="foot" style="display:flex;gap:8px">
+    <button class="btn primary" id="btnAliasSave">保存</button>
+    <button class="btn ghost" id="btnAliasClear">清除</button>
+  </div>
+</div></div>
+
 <!-- 说明 -->
 <div class="mask" id="mHelp"><div class="sheet">
   <h3>怎么用<button class="x" data-close>×</button></h3>
@@ -266,6 +284,7 @@ footer{
     <p style="margin:4px 0"><b>3</b> 到齐了不用管；谁没来，点「出勤 已到」变成「未到」。</p>
     <p style="margin:4px 0"><b>4</b> 底部实时算：总人数 / 请假 / 应到 / 实到 / 未到。</p>
     <p style="margin:4px 0"><b>5</b> 点「保存本次」存档；点「新的一天」清空重来（名单不动）。</p>
+    <p style="margin:4px 0"><b>6</b> 点<b>名字</b>可以加备注，比如「周一晚课」，会显示在名字后面。</p>
     <p style="margin:12px 0 0;color:#667085;font-size:13px">
       数据只存在这台设备里。换手机或清缓存前，去「备份」导出一个文件；到新设备用「导入备份」恢复。
     </p>
@@ -286,7 +305,7 @@ var DEFAULT_NAMES = [
 "刘涛","张凯翔","王浩沣","史昊达","李华轩","毕玉坤","刘冠臣","范仲源","牛辰妍","乔国昊"
 ];
 
-function blank(name){ return {name: name || "", leave:false, reason:"", absent:false}; }
+function blank(name){ return {name: name || "", alias:"", leave:false, reason:"", absent:false}; }
 
 function freshState(){
   var ppl = DEFAULT_NAMES.map(function(n){ return blank(n); });
@@ -303,7 +322,7 @@ function load(){
     if(!raw) return null;
     var s = JSON.parse(raw);
     if(!s || !Array.isArray(s.people) || !Array.isArray(s.records)) return null;
-    s.people = s.people.map(function(p){ return {name:p.name||"", leave:!!p.leave, reason:p.reason||"", absent:!!p.absent}; });
+    s.people = s.people.map(function(p){ return {name:p.name||"", alias:p.alias||"", leave:!!p.leave, reason:p.reason||"", absent:!!p.absent}; });
     return s;
   }catch(e){ return null; }
 }
@@ -336,7 +355,16 @@ function render(){
     idx.className = "idx"; idx.textContent = n;
 
     var nm = document.createElement("div");
-    nm.className = "name"; nm.textContent = p.name;
+    nm.className = "name";
+    nm.dataset.act = "alias";
+    nm.title = "点一下加备注";
+    nm.appendChild(document.createTextNode(p.name));
+    if(p.alias){
+      var al = document.createElement("span");
+      al.className = "al";
+      al.textContent = "（" + p.alias + "）";
+      nm.appendChild(al);
+    }
 
     var pills = document.createElement("div");
     pills.className = "pills";
@@ -360,7 +388,13 @@ function render(){
     lb.className = "lb"; lb.textContent = "事由";
     var inp = document.createElement("input");
     inp.type = "text"; inp.placeholder = "无"; inp.value = p.reason || "";
+    inp.defaultValue = p.reason || "";
     inp.dataset.act = "reason";
+    inp.setAttribute("autocomplete", "off");
+    inp.setAttribute("autocorrect", "off");
+    inp.setAttribute("autocapitalize", "off");
+    inp.setAttribute("spellcheck", "false");
+    inp.setAttribute("name", "rsn_" + i + "_" + Date.now());
     rs.appendChild(lb); rs.appendChild(inp);
 
     row.appendChild(idx); row.appendChild(nm); row.appendChild(pills); row.appendChild(rs);
@@ -368,6 +402,17 @@ function render(){
   });
   listEl.appendChild(frag);
   if(n === 0){ listEl.innerHTML = '<div class="empty">名单是空的，点上面「名单」填名字</div>'; }
+  // 有些手机浏览器（含微信）会把上次输入自动填回同位置的输入框，这里强制按状态清一遍
+  requestAnimationFrame(function(){
+    var inputs = listEl.querySelectorAll('.reason input');
+    for(var k=0;k<inputs.length;k++){
+      var r = inputs[k].closest('.row');
+      if(!r) continue;
+      var pp = state.people[+r.dataset.i];
+      var want = (pp && pp.reason) ? pp.reason : "";
+      if(inputs[k].value !== want) inputs[k].value = want;
+    }
+  });
   updateStats();
 }
 
@@ -389,6 +434,11 @@ function updateStats(){
 
 /* ---------------- 交互 ---------------- */
 listEl.addEventListener("click", function(e){
+  var nm = e.target.closest('.name[data-act="alias"]');
+  if(nm){
+    var r0 = nm.closest(".row");
+    if(r0){ openAlias(+r0.dataset.i); return; }
+  }
   var b = e.target.closest("button[data-act]");
   if(!b) return;
   var row = b.closest(".row"); if(!row) return;
@@ -426,7 +476,7 @@ document.getElementById("btnSave").addEventListener("click", function(){
     date: d, activity: a,
     ts: new Date().toISOString(),
     people: state.people.map(function(p){
-      return {name:p.name, leave:p.leave, reason:p.reason, absent:p.absent};
+      return {name:p.name, alias:p.alias, leave:p.leave, reason:p.reason, absent:p.absent};
     })
   };
   var same = -1;
@@ -458,6 +508,39 @@ document.querySelectorAll(".mask").forEach(function(m){
   m.addEventListener("click", function(e){
     if(e.target === m || e.target.closest("[data-close]")) closeMask(m);
   });
+});
+
+/* ---------------- 备注（名字后面的括号） ---------------- */
+var aliasTarget = -1;
+function openAlias(i){
+  var p = state.people[i];
+  if(!p) return;
+  aliasTarget = i;
+  document.getElementById("aliasTitle").textContent = "备注 · " + p.name;
+  var el = document.getElementById("aliasInput");
+  el.value = p.alias || "";
+  openMask("mAlias");
+  setTimeout(function(){ try{ el.focus(); el.select(); }catch(e){} }, 90);
+}
+function applyAlias(v){
+  if(aliasTarget < 0) return;
+  var p = state.people[aliasTarget];
+  if(!p){ aliasTarget = -1; return; }
+  p.alias = String(v || "").replace(/[（）()]/g, "").trim();
+  persist();
+  closeMask(document.getElementById("mAlias"));
+  render();
+  toast(p.alias ? "已保存备注" : "已清除备注");
+  aliasTarget = -1;
+}
+document.getElementById("btnAliasSave").addEventListener("click", function(){
+  applyAlias(document.getElementById("aliasInput").value);
+});
+document.getElementById("btnAliasClear").addEventListener("click", function(){
+  applyAlias("");
+});
+document.getElementById("aliasInput").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); applyAlias(this.value); }
 });
 
 /* ---------------- 历史 ---------------- */
@@ -509,6 +592,12 @@ function showDetail(r){
     d.className = "detail-row";
     var l = document.createElement("div"); l.className = "l";
     l.textContent = n + ". " + p.name;
+    if(p.alias){
+      var al = document.createElement("span");
+      al.style.cssText = "font-size:12px;color:#2f5597;margin-left:2px";
+      al.textContent = "（" + p.alias + "）";
+      l.appendChild(al);
+    }
     if(p.leave){
       var tg = document.createElement("span"); tg.className="tag no"; tg.textContent = "请假";
       l.appendChild(tg);
@@ -587,7 +676,7 @@ function recordToRows(r){
   r.people.forEach(function(p){
     if(!p.name.trim()) return;
     n++;
-    rows.push([r.date, r.activity, n, p.name,
+    rows.push([r.date, r.activity, n, p.name, p.alias || "",
       p.leave ? "是" : "否",
       p.leave ? (p.reason || "无") : "",
       p.leave ? "—" : (p.absent ? "未到" : "已到")]);
@@ -596,7 +685,7 @@ function recordToRows(r){
 }
 
 function buildCsv(recs){
-  var lines = [[ "日期","活动","序号","姓名","请假","事由","出勤" ].map(csvCell).join(",")];
+  var lines = [[ "日期","活动","序号","姓名","备注","请假","事由","出勤" ].map(csvCell).join(",")];
   recs.forEach(function(r){
     recordToRows(r).forEach(function(row){ lines.push(row.map(csvCell).join(",")); });
   });
@@ -608,7 +697,7 @@ document.getElementById("btnExport").addEventListener("click", function(){
   if(!d || !a){ if(!confirm("当前还没填日期/活动，仍然导出当前这张表吗？")) return; }
   var rec = {
     date: d || "未填日期", activity: a || "未填活动",
-    people: state.people.map(function(p){ return {name:p.name, leave:p.leave, reason:p.reason, absent:p.absent}; })
+    people: state.people.map(function(p){ return {name:p.name, alias:p.alias, leave:p.leave, reason:p.reason, absent:p.absent}; })
   };
   if(download("考勤-" + (d||"未填") + "-" + (a||"未填") + ".csv", buildCsv([rec]), "text/csv;charset=utf-8", true)){
     toast("已导出 CSV，可用 Excel / WPS 打开");
@@ -631,8 +720,17 @@ document.getElementById("btnRoster").addEventListener("click", function(){
     var no = document.createElement("div"); no.className = "no"; no.textContent = i+1;
     var inp = document.createElement("input");
     inp.type = "text"; inp.value = p.name; inp.placeholder = "（空）";
+    inp.className = "nm";
     inp.addEventListener("input", function(){
       state.people[i].name = inp.value;
+      persist();
+    });
+    var alInp = document.createElement("input");
+    alInp.type = "text"; alInp.value = p.alias || ""; alInp.placeholder = "备注";
+    alInp.className = "al";
+    alInp.setAttribute("maxlength", "24");
+    alInp.addEventListener("input", function(){
+      state.people[i].alias = alInp.value;
       persist();
     });
     var rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "×";
@@ -643,7 +741,7 @@ document.getElementById("btnRoster").addEventListener("click", function(){
       document.getElementById("btnRoster").click();
       render();
     });
-    row.appendChild(no); row.appendChild(inp); row.appendChild(rm);
+    row.appendChild(no); row.appendChild(inp); row.appendChild(alInp); row.appendChild(rm);
     body.appendChild(row);
   });
   openMask("mRoster");
@@ -658,10 +756,10 @@ document.getElementById("btnAddRow").addEventListener("click", function(){
 document.getElementById("btnDefaultRoster").addEventListener("click", function(){
   if(!confirm("恢复成默认 50 人 + 5 个空位？当前名单里自己加的名字会没了（记录不受影响）。")) return;
   var oldReason = {};
-  state.people.forEach(function(p){ if(p.name) oldReason[p.name] = {leave:p.leave, reason:p.reason, absent:p.absent}; });
+  state.people.forEach(function(p){ if(p.name) oldReason[p.name] = {alias:p.alias, leave:p.leave, reason:p.reason, absent:p.absent}; });
   var ppl = DEFAULT_NAMES.map(function(n){
     var b = blank(n);
-    if(oldReason[n]){ b.leave = oldReason[n].leave; b.reason = oldReason[n].reason; b.absent = oldReason[n].absent; }
+    if(oldReason[n]){ b.alias = oldReason[n].alias; b.leave = oldReason[n].leave; b.reason = oldReason[n].reason; b.absent = oldReason[n].absent; }
     return b;
   });
   for(var i=0;i<5;i++) ppl.push(blank(""));
