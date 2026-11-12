@@ -191,6 +191,11 @@ footer{
   </div>
 </header>
 
+<div id="wxBar" style="display:none;background:#fdf3e3;border-bottom:1px solid #efd3a8;color:#8a5300;font-size:12.5px;line-height:1.55;padding:7px 34px 7px 12px;position:relative">
+  你现在是在<b>微信里</b>打开的。微信和手机浏览器各存各的、不会同步；想换入口，先去「备份」把数据复制出来再导入。
+  <button id="wxBarX" style="position:absolute;right:6px;top:4px;color:#8a5300;font-size:16px;padding:2px 6px">×</button>
+</div>
+
 <div class="list" id="list"></div>
 
 <footer>
@@ -235,14 +240,19 @@ footer{
 <div class="mask" id="mBackup"><div class="sheet">
   <h3>备份与恢复<button class="x" data-close>×</button></h3>
   <div class="body">
-    <p id="wxTip" style="display:none;font-size:13px;color:#b26a00;background:#fdf3e3;border:1px solid #efd3a8;border-radius:8px;padding:8px 10px;margin:0 0 12px;line-height:1.65">微信里不能下载文件。请点右上角 <b>…</b> → <b>在浏览器打开</b>，再做备份。</p>
+    <p id="wxTip" style="display:none;font-size:13px;color:#b26a00;background:#fdf3e3;border:1px solid #efd3a8;border-radius:8px;padding:8px 10px;margin:0 0 12px;line-height:1.65">微信里不能下载文件，用下面「复制备份内容」，再到浏览器里「粘贴导入」即可。</p>
     <p style="font-size:13px;color:#667085;margin:2px 0 14px">
-      数据只存在这台设备的浏览器里。换手机、清缓存前，先「导出备份」存一个文件；到新设备用「导入备份」恢复。
+      数据只存在这台设备的浏览器里，微信和手机浏览器是两套，互不相通。换手机、清缓存、换入口前，先导出备份。
     </p>
     <button class="btn ghost" id="btnExportBackup" style="width:100%;margin-bottom:8px">导出备份文件（.json）</button>
-    <label class="btn ghost" style="width:100%">导入备份文件
+    <label class="btn ghost" style="width:100%;margin-bottom:14px">导入备份文件
       <input type="file" id="fileImport" accept="application/json,.json" hidden>
     </label>
+
+    <p style="font-size:13px;color:#667085;margin:0 0 8px">或者直接用文本搬（微信 ↔ 浏览器）：</p>
+    <textarea id="importText" placeholder="把备份内容粘贴到这里" autocomplete="off"
+      style="width:100%;height:96px;font:12px/1.5 ui-monospace,Consolas,monospace;border:1px solid #e4e7ec;border-radius:10px;padding:10px;resize:vertical;background:#fbfcfd;color:#344054"></textarea>
+    <button class="btn ghost" id="btnImportText" style="width:100%;margin-top:8px">导入这段内容</button>
   </div>
 </div></div>
 
@@ -636,6 +646,7 @@ function download(filename, text, mime, copyable){
 }
 
 function showTextExport(filename, text, copyable){
+  var isJson = /\.json$/i.test(filename);
   document.getElementById("textTitle").textContent = filename;
   var ta = document.getElementById("textArea");
   var copyBtn = document.getElementById("btnCopyText");
@@ -644,10 +655,12 @@ function showTextExport(filename, text, copyable){
     ta.style.display = "block";
     ta.value = String(text).replace(/^\uFEFF/, "");
     copyBtn.style.display = "flex";
-    hint.innerHTML = (isWeChat
-      ? "微信里不能直接下载文件，所以这里把内容显示出来。<br>点「复制内容」粘贴到微信文件传输助手，再存成表格；"
-      : "内容已生成，可复制后另存为文件；")
-      + "<br>想直接下载文件：点右上角 <b>…</b> → <b>在浏览器打开</b>，再点导出。";
+    hint.innerHTML = isJson
+      ? "这是<b>备份内容</b>。<br>点「复制内容」发给自己，在另一个入口（微信 ↔ 浏览器）打开本页 →「备份」→ 粘贴到「导入这段内容」的框里 → 点导入。<br>也可以点右上角 <b>…</b> → <b>在浏览器打开</b> 后直接下载文件。"
+      : (isWeChat
+        ? "微信里不能直接下载文件，所以这里把内容显示出来。<br>点「复制内容」粘贴到微信文件传输助手，再存成表格；"
+        : "内容已生成，可复制后另存为文件；")
+        + "<br>想直接下载文件：点右上角 <b>…</b> → <b>在浏览器打开</b>，再点导出。";
   }else{
     ta.style.display = "none";
     copyBtn.style.display = "none";
@@ -778,31 +791,41 @@ document.getElementById("btnHelp").addEventListener("click", function(){ openMas
 
 document.getElementById("btnExportBackup").addEventListener("click", function(){
   if(download("考勤备份-" + new Date().toISOString().slice(0,10) + ".json",
-    JSON.stringify(state, null, 2), "application/json", false)){
+    JSON.stringify(state, null, 2), "application/json", true)){
     toast("已导出备份");
   }
 });
+
+function applyImport(s){
+  if(!s || !Array.isArray(s.people)) throw new Error("格式不对");
+  if(!confirm("导入会覆盖当前的所有数据和记录，确定吗？")) return false;
+  state = s;
+  state.records = state.records || [];
+  dateEl.value = state.date || "";
+  actEl.value = state.activity || "";
+  persist(); render();
+  closeMask(document.getElementById("mBackup"));
+  toast("导入成功");
+  return true;
+}
 
 document.getElementById("fileImport").addEventListener("change", function(e){
   var f = e.target.files && e.target.files[0];
   if(!f) return;
   var rd = new FileReader();
   rd.onload = function(){
-    try{
-      var s = JSON.parse(rd.result);
-      if(!s || !Array.isArray(s.people)) throw new Error("格式不对");
-      if(!confirm("导入会覆盖当前的所有数据和记录，确定吗？")) return;
-      state = s;
-      state.records = state.records || [];
-      dateEl.value = state.date || "";
-      actEl.value = state.activity || "";
-      persist(); render();
-      closeMask(document.getElementById("mBackup"));
-      toast("导入成功");
-    }catch(err){ alert("文件读不出来，可能不是备份文件"); }
+    try{ applyImport(JSON.parse(rd.result)); }
+    catch(err){ alert("文件读不出来，可能不是备份文件"); }
   };
   rd.readAsText(f, "utf-8");
   e.target.value = "";
+});
+
+document.getElementById("btnImportText").addEventListener("click", function(){
+  var txt = document.getElementById("importText").value.trim();
+  if(!txt){ toast("先把备份内容粘贴进来"); return; }
+  try{ applyImport(JSON.parse(txt)); document.getElementById("importText").value = ""; }
+  catch(err){ alert("内容读不出来，可能不是完整的备份内容"); }
 });
 
 /* ---------------- toast ---------------- */
@@ -819,6 +842,17 @@ function toast(msg){
 dateEl.value = state.date || "";
 actEl.value = state.activity || "";
 render();
+
+// 微信里给一条入口提示（关掉后不再弹）
+try{
+  if(isWeChat && localStorage.getItem("kq_wxbar") !== "off"){
+    document.getElementById("wxBar").style.display = "block";
+  }
+}catch(e){}
+document.getElementById("wxBarX").addEventListener("click", function(){
+  document.getElementById("wxBar").style.display = "none";
+  try{ localStorage.setItem("kq_wxbar", "off"); }catch(e){}
+});
 </script>
 </body>
 </html>
